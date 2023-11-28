@@ -195,7 +195,6 @@ export default class TabSessionManager {
         break;
       /* Lists: */
       case MType.ConsoleLog:
-        if (msg.level === 'debug') break;
         this.lists.lists.log.append(
           // @ts-ignore : TODO: enums in the message schema
           Log(msg)
@@ -373,6 +372,7 @@ export default class TabSessionManager {
   }
 
   public getListsFullState = () => {
+    console.trace('triggered, ', this.lists.getFullListsState())
     return this.lists.getFullListsState()
   }
 

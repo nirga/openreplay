@@ -1,15 +1,17 @@
 // @ts-ignore
+import { getResourceFromNetworkRequest, getResourceFromResourceTiming, Log, ResourceType } from "Player";
 import { Decoder } from 'syncod';
 import logger from 'App/logger';
 
 import type { Store, ILog } from 'Player';
 import ListWalker from '../common/ListWalker';
+import Lists from "./Lists";
 
 import MouseMoveManager from './managers/MouseMoveManager';
 
 import ActivityManager from './managers/ActivityManager';
 
-import { MouseThrashing, MType } from './messages';
+import { MouseThrashing, MType, ResourceTiming } from "./messages";
 import type { Message, MouseClick } from './messages';
 
 import Screen, {
@@ -106,6 +108,7 @@ export default class MessageManager {
   public readonly tabs: Record<string, TabSessionManager> = {};
   private tabChangeEvents: TabChangeEvent[] = [];
   private activeTab = '';
+  private lists: Lists;
 
   constructor(
     private readonly session: Record<string, any>,
@@ -116,15 +119,13 @@ export default class MessageManager {
   ) {
     this.mouseMoveManager = new MouseMoveManager(screen);
     this.sessionStart = this.session.startedAt;
+    // we use it here to have shared lists for stuff like network
+    this.lists = new Lists(initialLists)
     this.activityManager = new ActivityManager(this.session.duration.milliseconds); // only if not-live
   }
 
   public getListsFullState = () => {
-    const fullState: Record<string, any> = {};
-    for (let tab in Object.keys(this.tabs)) {
-      fullState[tab] = this.tabs[tab].getListsFullState();
-    }
-    return Object.values(this.tabs)[0].getListsFullState();
+    return { ...Object.values(this.tabs)[0].getListsFullState(), ...this.lists.getFullListsState() };
   };
 
   public updateLists(lists: RawList) {
@@ -286,6 +287,24 @@ export default class MessageManager {
           });
           this.activeTabManager.append(msg);
         }
+        break;
+      case MType.ConsoleLog:
+        this.lists.lists.log.append(
+          // @ts-ignore : TODO: enums in the message schema
+          Log(msg)
+        )
+        break;
+      case MType.ResourceTimingDeprecated:
+      case MType.ResourceTiming:
+        console.log('inserting resource', msg)
+        // TODO: merge `resource` and `fetch` lists into one here instead of UI
+        if (msg.initiator !== ResourceType.FETCH && msg.initiator !== ResourceType.XHR) {
+          this.lists.lists.resource.insert(getResourceFromResourceTiming(msg as ResourceTiming, this.sessionStart))
+        }
+        break;
+      case MType.Fetch:
+      case MType.NetworkRequest:
+        this.lists.lists.fetch.insert(getResourceFromNetworkRequest(msg, this.sessionStart))
         break;
       case MType.MouseThrashing:
         this.mouseThrashingManager.append(msg);

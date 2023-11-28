@@ -3,6 +3,7 @@ import MobilePlayer from 'Player/mobile/IOSPlayer';
 import React, { useMemo, useState } from 'react';
 import { observer } from 'mobx-react-lite';
 import { Duration } from 'luxon';
+import { mergeEventLists } from "Types/session";
 
 import { Tooltip, Tabs, Input, NoContent, Icon, Toggler } from 'UI';
 import { ResourceType, Timed } from 'Player';
@@ -156,7 +157,7 @@ function NetworkPanelCont({ startedAt, panelHeight }: { startedAt: number; panel
     resourceList = [],
     fetchListNow = [],
     resourceListNow = [],
-  } = tabStates[currentTab];
+  } = store.get();
 
   return (
     <NetworkPanelComp
