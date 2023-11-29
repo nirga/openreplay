@@ -1,5 +1,5 @@
 #ARCH can be amd64 or arm64
-ARG ARCH=amd64
+ARG ARCH=arm64
 
 FROM --platform=linux/$ARCH golang:1.21-alpine3.18 AS build
 RUN apk add --no-cache gcc g++ make libc-dev
